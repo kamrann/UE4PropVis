@@ -142,6 +142,19 @@ namespace UE4PropVis
 			return null;
 		}
 
+		// This just removes the '_C' suffix from the given blueprint class name
+		public static string GetBlueprintClassDisplayName(string raw_uclass_fname)
+		{
+			if(raw_uclass_fname.IndexOf("_C") == raw_uclass_fname.Length - 2)
+			{
+				return raw_uclass_fname.Substring(0, raw_uclass_fname.Length - 2);
+			}
+			else
+			{
+				return String.Copy(raw_uclass_fname);
+			}
+		}
+
 		// Determines the corresponding C++ name for the passed in UClass unprefixed name.
 		public static string DetermineNativeUClassCppTypeName(string uclass_fname, DkmVisualizedExpression context_expr)
 		{

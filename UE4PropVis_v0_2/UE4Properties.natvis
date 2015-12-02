@@ -1,19 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
   
-  <Type Name="test_class">
-    <CustomVisualizer VisualizerId="7802FE3A-0F30-4114-B701-65A33DD04133"/>
-  </Type>
-
   <Type Name="UObject">
     <CustomVisualizer VisualizerId="7802FE3A-0F30-4114-B701-65A33DD04133"/>
   </Type>
-
-  <!-- Failed attempt to get the debugger to call back into the component and invoke a 
-  dedicated visualizer for the 'property list' fabricated child.
-  <Type Name="UE4PropertyList">
-    <CustomVisualizer VisualizerId="C52D5C78-D82C-411D-B5A0-E8B1C7C6B57A"/>
-  </Type>
-   -->
 
 </AutoVisualizer>

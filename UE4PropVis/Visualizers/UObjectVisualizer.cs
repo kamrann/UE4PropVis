@@ -247,7 +247,11 @@ namespace UE4PropVis
 						DkmEvaluationResultFlags.ReadOnly,
 						display_str,
 						"",
+#if !VS2013
 						as_root.Type,
+#else
+						"Unknown",
+#endif
 						DkmEvaluationResultCategory.Other,
 						DkmEvaluationResultAccessType.None,
 						DkmEvaluationResultStorageType.None,
@@ -341,7 +345,11 @@ namespace UE4PropVis
 						DkmEvaluationResultFlags.ReadOnly | DkmEvaluationResultFlags.Expandable,
 						"",
 						"",
+#if !VS2013
 						Utility.GetExpressionType(expression_),
+#else
+						is_pointer ? "UObject *" : "UObject",
+#endif
 						DkmEvaluationResultCategory.Other,
 						DkmEvaluationResultAccessType.None,
 						DkmEvaluationResultStorageType.None,

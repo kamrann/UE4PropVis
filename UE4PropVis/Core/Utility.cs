@@ -43,10 +43,12 @@ namespace UE4PropVis
 			}
 		}
 
+#if !VS2013
 		public static string GetExpressionType(DkmVisualizedExpression expression)
 		{
 			if (expression.TagValue == DkmVisualizedExpression.Tag.RootVisualizedExpression)
 			{
+                var temp = expression as DkmRootVisualizedExpression;
 				return ((DkmRootVisualizedExpression)expression).Type;
 			}
 			else if (expression.TagValue == DkmVisualizedExpression.Tag.ChildVisualizedExpression)
@@ -67,6 +69,7 @@ namespace UE4PropVis
 				return null;
 			}
 		}
+#endif
 
 		// Removes any ",..." format specifiers from the end of the given expression string
 		public static string StripExpressionFormatting(string expr_str)

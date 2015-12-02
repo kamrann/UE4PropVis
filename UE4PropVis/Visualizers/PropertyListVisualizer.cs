@@ -126,9 +126,10 @@ namespace UE4PropVis
 
 				var expr = DkmChildVisualizedExpression.Create(
 					expression_.InspectionContext,
-					Guids.Visualizer.PropertyList,//Guids.Visualizer.PropertyValue,
-					// Associate the expression with ourselves, since we created it
-					PropListExpression.Parent.SourceId,//Guids.Component.VisualizerComponent,
+					Guids.Visualizer.PropertyList,
+					// Seems that in order for these to be passed back to the EE for default expansion, they need to be given
+					// the SourceId from the originally received root expression.
+					PropListExpression.Parent.SourceId,
 					expression_.StackFrame,
 					home,
 					eval,
@@ -447,15 +448,16 @@ namespace UE4PropVis
 						// Need to find out the subtype of the property, which is specified by UObjectPropertyBase::PropertyClass
 						var objprop_em = ExpressionManipulator.FromExpression(uprop_expr_str).PtrCast(CppProp.ObjectBase);
 						var subtype_uclass_em = objprop_em.PtrMember(Memb.ObjectSubtype);
+						var uclass_fname_em = subtype_uclass_em.PtrCast(Typ.UObjectBase).PtrMember(Memb.ObjName);
+						string uclass_fname = UE4Utility.GetFNameAsString(uclass_fname_em.Expression, context_expr);
 
 						// Is the property class native?
 						bool is_native = UE4Utility.IsNativeUClassOrUInterface(subtype_uclass_em.Expression, context_expr);
 						string native_uclass_fname;
 						if (is_native)
 						{
-							// Yes, just grab its name
-							var uclass_fname_em = subtype_uclass_em.PtrCast(Typ.UObjectBase).PtrMember(Memb.ObjName);
-							native_uclass_fname = UE4Utility.GetFNameAsString(uclass_fname_em.Expression, context_expr);
+							// Yes
+							native_uclass_fname = uclass_fname;
 						}
 						else
 						{
@@ -468,19 +470,46 @@ namespace UE4PropVis
 						// Now we have to convert the unprefixed name, to a prefixed C++ type name
 						obj_cpp_type_name = UE4Utility.DetermineNativeUClassCppTypeName(native_uclass_fname, context_expr);
 
-						// @NOTE: Don't really see anything to gain by casting to TAssetPtr< xxx >, since it's just another level of encapsulation that isn't
-						// needed for visualization purposes.
-						// @TODO: If stick with this, separate out object and asset with if/else, since asset doesn't need a fallback.
-						string primary_type = prop_type == Prop.Object ? String.Format("{0} *", obj_cpp_type_name) : Typ.AssetPtr; //String.Format("TAssetPtr<{0}>", obj_cpp_type_name);
-						string primary_display = prop_type == Prop.Object ? primary_type : String.Format("{0} [{1}]", Typ.AssetPtr, obj_cpp_type_name);
-						string fallback_type = prop_type == Prop.Object ? String.Format("{0} *", Typ.UObject) : Typ.AssetPtr;
-						string fallback_display = prop_type == Prop.Object ? String.Format("{0} ({1}?)", fallback_type, obj_cpp_type_name) : String.Format("{0} [{1}]", Typ.AssetPtr, obj_cpp_type_name);
-
-						return new CppTypeInfo[]
+						string uclass_display_name = UE4Utility.GetBlueprintClassDisplayName(uclass_fname);
+						switch (prop_type)
 						{
-							new CppTypeInfo(primary_type, primary_display),
-							new CppTypeInfo(fallback_type, fallback_display)
-						};
+							case Prop.Object:
+								{
+									// if not native, add a suffix to the display type showing the blueprint class of the property
+									// @NOTE: this is nothing to do with what object the value points to and what its type may be. property meta data only.
+									string suffix = is_native ? String.Empty : String.Format(" [{0}]", uclass_display_name);
+									string primary_type = String.Format("{0} *", obj_cpp_type_name);
+									string primary_display = String.Format("{0} *{1}", obj_cpp_type_name, suffix);
+									// fallback, no symbols available for the native base type, so use 'UObject' instead
+									string fallback_type = String.Format("{0} *", Typ.UObject);
+									string fallback_display = String.Format("{0}? *{1}", obj_cpp_type_name, suffix);
+
+									return new CppTypeInfo[]
+									{
+										new CppTypeInfo(primary_type, primary_display),
+										new CppTypeInfo(fallback_type, fallback_display)
+									};
+								}
+
+							case Prop.Asset:
+								{
+									// @NOTE: Don't really see anything to gain by casting to TAssetPtr< xxx >, since it's just another level of encapsulation that isn't
+									// needed for visualization purposes.
+									string suffix = String.Format(" [{0}]", is_native ? obj_cpp_type_name : uclass_display_name);
+									string primary_type = Typ.AssetPtr; //String.Format("TAssetPtr<{0}>", obj_cpp_type_name);
+									string primary_display = String.Format("{0}{1}", Typ.AssetPtr, suffix);
+
+									// If just using FAssetPtr, no need for a fallback since we don't need to evaluate the specialized template parameter type
+									return new CppTypeInfo[]
+									{
+										new CppTypeInfo(primary_type, primary_display)
+									};
+								}
+
+							default:
+								Debug.Assert(false);
+								return null;
+						}
 					}
 
 /*				@TODO: Not so important. What's below is wrong, but essentially if we implement this, it's just to differentiate between UClass, UBlueprintGeneratedClass, etc
