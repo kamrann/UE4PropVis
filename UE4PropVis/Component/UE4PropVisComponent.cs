@@ -12,6 +12,9 @@ using Microsoft.VisualStudio.Debugger.Evaluation;
 using UE4PropVis.Core;
 using UE4PropVis.Core.EE;
 
+//add a bunch of print strings to the various callback method implementatons,
+//	and try again setting the property value vis id to be guid.empty.
+
 
 namespace UE4PropVis
 {
@@ -43,6 +46,12 @@ namespace UE4PropVis
 
 		void IDkmCustomVisualizer.EvaluateVisualizedExpression(DkmVisualizedExpression expression, out DkmEvaluationResult resultObject)
 		{
+			Debug.Print("UE4PV: EvaluateVisualizedExpression('{0}'/'{1}', [{2}])",
+				Utility.GetExpressionFullName(expression),
+				Utility.GetExpressionName(expression),
+				expression.TagValue
+				);
+
 			// Sanity check to confirm this is only being invoked for UObject types. @TODO: Remove eventually.
 			// Believe this method is only invoked on DkmRootVisualizedExpression instances, not children.
 			Debug.Assert(expression.VisualizerId == Guids.Visualizer.UObject);
@@ -68,6 +77,13 @@ namespace UE4PropVis
 
         void IDkmCustomVisualizer.GetChildren(DkmVisualizedExpression expression, int initialRequestSize, DkmInspectionContext inspectionContext, out DkmChildVisualizedExpression[] initialChildren, out DkmEvaluationResultEnumContext enumContext)
         {
+			Debug.Print("UE4PV: GetChildren('{0}'/'{1}', [{2}, {3}])",
+				Utility.GetExpressionFullName(expression),
+				Utility.GetExpressionName(expression),
+				expression.TagValue,
+				expression.VisualizerId
+				);
+
 			var data_item = expression.GetDataItem<ExpressionDataItem>();
 			var visualizer = data_item.Visualizer;
 			Debug.Assert(visualizer != null);
@@ -97,6 +113,13 @@ namespace UE4PropVis
 
         void IDkmCustomVisualizer.UseDefaultEvaluationBehavior(DkmVisualizedExpression expression, out bool useDefaultEvaluationBehavior, out DkmEvaluationResult defaultEvaluationResult)
         {
+			Debug.Print("UE4PV: UseDefaultEvaluationBehavior('{0}'/'{1}', [{2}, {3}])",
+				Utility.GetExpressionFullName(expression),
+				Utility.GetExpressionName(expression),
+				expression.TagValue,
+				expression.VisualizerId
+				);
+
 			var data_item = expression.GetDataItem<ExpressionDataItem>();
 			if (data_item != null)
 			{
@@ -113,19 +136,16 @@ namespace UE4PropVis
 			// Don't need any special expansion, just delegate back to the default EE
 			useDefaultEvaluationBehavior = true;
 
-			// @TODO: Perhaps here too, if child expression there is no need to reevaluate?
-			// Seems that this isn't accepted - the expansion just doesn't generate anything.
-			// Not sure how the evaluation result differs from a default-generated one (after all we basically
-			// just used the default one with very minor alterations) for the EE to reject it, but this
-			// does kind of fit with what is mentioned in the docs.
-			if (false)//expression.TagValue == DkmVisualizedExpression.Tag.ChildVisualizedExpression)
-			{
-				defaultEvaluationResult = ((DkmChildVisualizedExpression)expression).EvaluationResult;
-			}
-			else
-			{
-				defaultEvaluationResult = DefaultEE.DefaultEval(expression, false);
-			}
+			/* @NOTE:
+			Not sure where exactly the problem is, but UObject properties don't expand in VS 2013.
+			When we try, there is an initial call to this method with the property's child expr,
+			so we come here, and do a default eval, which, if the prop is a UObject, will invoke 
+			EvaluateVisualizedExpression above with a new root expr. In 2014, that is followed by
+			another call to this method for the root expr, which has an attached visualizer and we
+			do the custom expansion. In 2013, it seems the second call into this method does not
+			occur for some reason.
+			*/
+			defaultEvaluationResult = DefaultEE.DefaultEval(expression, false);
 		}
 	}
 }

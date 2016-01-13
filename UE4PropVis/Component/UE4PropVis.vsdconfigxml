@@ -31,9 +31,8 @@ For more information about this file, see https://github.com/Microsoft/ConcordEx
           <Filter>
             <VisualizerId RequiredValue="guidUObjectVisualizerId"/>
             <VisualizerId RequiredValue="guidPropertyListVisualizerId"/>
-            <!-- Testing 
+            <!-- Testing -->
             <VisualizerId RequiredValue="4B57B038-C96A-4F9D-BBA9-481485F3E53E"/>
-            -->
           </Filter>
           <Interface Name="IDkmCustomVisualizer"/>
         </InterfaceGroup>

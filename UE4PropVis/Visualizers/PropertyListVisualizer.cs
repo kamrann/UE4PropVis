@@ -126,7 +126,10 @@ namespace UE4PropVis
 
 				var expr = DkmChildVisualizedExpression.Create(
 					expression_.InspectionContext,
-					Guids.Visualizer.PropertyList,
+					// @TODO: This is weird... seems to affect whether we get callback.
+					// Obviously the properties can be of any type, UObject or not.
+					// Perhaps best to put back the guid for PropertyValue, even though we don't really need to use it.
+					Guids.Visualizer.PropertyValue,//Guids.Visualizer.UObject,//Guids.Visualizer.PropertyList,
 					// Seems that in order for these to be passed back to the EE for default expansion, they need to be given
 					// the SourceId from the originally received root expression.
 					PropListExpression.Parent.SourceId,
@@ -197,6 +200,8 @@ namespace UE4PropVis
 			uint idx = 0;
 			while (true)
 			{
+				Debug.Print("UE4PV: Invoking raw eval on UProperty* expression");
+
 				var prop_eval = DefaultEE.DefaultEval(prop_em.Expression, start_expr, true) as DkmSuccessEvaluationResult;
 				Debug.Assert(prop_eval != null);
 
@@ -598,6 +603,8 @@ namespace UE4PropVis
 
 		protected DkmEvaluationResult GeneratePropertyValueEval(string container_expr_str, string uprop_expr_str, uint index, DkmVisualizedExpression context_expr)
 		{
+			Debug.Print("UE4PV: Trying to generate property value for property #{0}", index + 1);
+
 			var uprop_em = ExpressionManipulator.FromExpression(uprop_expr_str);
 
 			// Get name of property
@@ -632,6 +639,8 @@ namespace UE4PropVis
             foreach (var cpp_type_info in cpp_type_info_list)
 			{
 				string prop_value_expr_str = AdjustPropertyExpressionStringForType(address_str, prop_type, uprop_em.Expression, context_expr, cpp_type_info);
+
+				Debug.Print("UE4PV: Attempting exp eval as: '{0}'", prop_value_expr_str);
 
 				// Attempt to evaluate the expression
 				DkmEvaluationResult raw_eval = DefaultEE.DefaultEval(prop_value_expr_str, context_expr, false);

@@ -271,6 +271,7 @@ namespace UE4PropVis
 			DkmSuccessEvaluationResult proto_eval = null;
 			bool is_pointer;
 			bool is_null;
+			string address_str = "";
 
 			// @NOTE: Initially here we were executing the full default evaluation of our expression.
 			// Problem is that this will call back into us for all UObject children of the expression,
@@ -312,6 +313,7 @@ namespace UE4PropVis
 
 					is_pointer = IsPointer(proto_eval);
 					is_null = is_pointer && IsPointerNull(proto_eval);
+					// @TODO: need to extract address string
 				}
 			}
 			else
@@ -335,6 +337,7 @@ namespace UE4PropVis
 					is_pointer = true;
 					is_null = is_pointer && IsPointerNull(success);
 					address = success.Address;
+					address_str = success.Value;
 				}
 
 				proto_eval = DkmSuccessEvaluationResult.Create(
@@ -393,6 +396,14 @@ namespace UE4PropVis
 			}
 			else if (Config.DisplayUObjectPreview)
 			{
+				// Prefix the address, if this is a pointer expression
+				string address_prefix_str = "";
+				if(is_pointer)
+				{
+					address_prefix_str = address_str + " ";
+				}
+
+				// Specialized display for UClass?
 				bool uclass_specialized = false;
 				if (Config.DisplaySpecializedUClassPreview)
 				{
@@ -417,7 +428,8 @@ namespace UE4PropVis
 						}
 
 						custom_display_str = String.Format(
-							"{{ClassName='{0}', Parent='{1}'}}",
+							"{0}{{ClassName='{1}', Parent='{2}'}}",
+							address_prefix_str,
 							obj_name_str,
 							parent_uclass_name_str
 							);
@@ -437,7 +449,8 @@ namespace UE4PropVis
 					string obj_uclass_name_str = UE4Utility.GetFNameAsString(uclass_fname_expr_str, expression_);
 
 					custom_display_str = String.Format(
-						"{{Name='{0}', Class='{1}'}}",
+						"{0}{{Name='{1}', Class='{2}'}}",
+						address_prefix_str,
 						obj_name_str,
 						obj_uclass_name_str
 						);
