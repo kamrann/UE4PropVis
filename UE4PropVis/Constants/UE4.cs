@@ -78,14 +78,17 @@ namespace UE4PropVis.Constants
 	public static class Memb
 	{
 		// UObjectBase
-		public const string ObjName = "Name";
-		public const string ObjClass = "Class";
-		public const string ObjOuter = "Outer";
+		public const string ObjName = "NamePrivate";
+		public const string ObjClass = "ClassPrivate";
+		public const string ObjOuter = "OuterPrivate";
 		public const string ObjFlags = "ObjectFlags";
 
 		// UStruct
 		public const string SuperStruct = "SuperStruct";
 		public const string FirstProperty = "PropertyLink";
+
+		// UClass
+		public const string ClassFlags = "ClassFlags";
 
 		// UProperty
 		public const string PropOffset = "Offset_Internal";
@@ -121,6 +124,13 @@ namespace UE4PropVis.Constants
 	{
 		private const string Qual = "EObjectFlags::";
 
-		public const string Native = Qual + "RF_Native";
+		public const string Native = Qual + "RF_MarkAsNative";
+	}
+
+	public static class ClassFlags
+	{
+		private const string Qual = "EClassFlags::";
+
+		public const string Native = Qual + "CLASS_Native";
 	}
 }

@@ -176,9 +176,9 @@ namespace UE4PropVis
 			{
 				// See if the actual class of the object instance whose properties we want to enumerate
 				// is native or not.
-				bool is_native = UE4Utility.TestUObjectFlags(
+				var is_native_res = UE4Utility.TestUClassFlags(
 					uclass_em.Expression,
-					ObjFlags.Native,
+					ClassFlags.Native,
 					start_expr
 					);
 
@@ -186,7 +186,8 @@ namespace UE4PropVis
 				// so bail out now.
 				// @TODO: Even if the class is not native, we should still be able to avoid doing all the work
 				// for enumerating every native property in order to find the non-native ones...
-				if(is_native)
+				// @TODO: How best to deal with failed is_native evaluation?
+				if(is_native_res.IsValid && is_native_res.Value)
 				{
 					return;
 				}
@@ -219,12 +220,19 @@ namespace UE4PropVis
 					// We can test this by getting the UProperty's Outer, and checking its object flags for RF_Native.
 					var prop_outer_em = prop_em.PtrCast(Typ.UObjectBase).PtrMember(Memb.ObjOuter);
 
-					bool is_native = UE4Utility.TestUObjectFlags(prop_outer_em.Expression, ObjFlags.Native, start_expr);
+					// @NOTE: RF_Native has gone, and checking for RF_MarkAsNative never seems to return true...
+					//var is_native_res = UE4Utility.TestUObjectFlags(prop_outer_em.Expression, ObjFlags.Native, start_expr);
+
+					// So, access class flags instead.
+					// Note that we make the assumption here that the property's outer is a UClass, which should be safe since
+					// we're starting out with a uobject, so all properties, including inherited ones, should be outered to a uclass.
+					var prop_outer_uclass_em = prop_outer_em.PtrCast(Typ.UClass);
+					var is_native_res = UE4Utility.TestUClassFlags(prop_outer_uclass_em.Expression, ClassFlags.Native, start_expr);
 
 					// According to UE4 UStruct API docs, property linked list is ordered from most-derived
 					// to base. If so, we should be able to bail out here knowing that having hit a native property,
 					// all following properties must be native too.
-					if (is_native)
+					if (is_native_res.IsValid && is_native_res.Value)
 					{
 						return;
 					}
@@ -390,9 +398,10 @@ namespace UE4PropVis
 								"{0}==UEnum::ECppForm::Namespaced",
 								uenum_em.PtrMember(Memb.EnumCppForm).Expression
 								);
-							bool is_namespaced = UE4Utility.EvaluateBooleanExpression(is_namespaced_enum_expr_str, context_expr);
+							var is_namespaced_res = UE4Utility.EvaluateBooleanExpression(is_namespaced_enum_expr_str, context_expr);
+							// @TODO: on evaluation failure??
 							CppTypeInfo primary;
-							if (is_namespaced)
+							if (is_namespaced_res.IsValid && is_namespaced_res.Value)
 							{
 								// A namespaced enum type should (hopefully) always be <UEnum::Name>::Type
 								primary = new CppTypeInfo(String.Format("{0}::Type", uenum_name), uenum_name);
@@ -457,7 +466,9 @@ namespace UE4PropVis
 						string uclass_fname = UE4Utility.GetFNameAsString(uclass_fname_em.Expression, context_expr);
 
 						// Is the property class native?
-						bool is_native = UE4Utility.IsNativeUClassOrUInterface(subtype_uclass_em.Expression, context_expr);
+						var is_native_res = UE4Utility.IsNativeUClassOrUInterface(subtype_uclass_em.Expression, context_expr);
+						// @TODO: currently not really handling failed eval
+						bool is_native = is_native_res.IsValid ? is_native_res.Value : true;
 						string native_uclass_fname;
 						if (is_native)
 						{

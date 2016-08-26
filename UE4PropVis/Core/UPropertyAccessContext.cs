@@ -61,12 +61,12 @@ namespace UE4PropVis.Core
 					{
 						// See if the actual class of the object instance is native or not.
 						var uclass_em = obj_em_.PtrCast(Typ.UObjectBase).PtrMember(Memb.ObjClass);
-						bool is_native = UE4Utility.TestUObjectFlags(
+						var is_native_res = UE4Utility.TestUClassFlags(
 							uclass_em.Expression,
-							ObjFlags.Native,
+							ClassFlags.Native,
 							context_expr_
 							);
-						return !is_native;
+						return is_native_res.IsValid && !is_native_res.Value;
 					}
 
 				case Config.PropDisplayPolicyType.All:

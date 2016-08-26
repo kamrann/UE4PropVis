@@ -9,6 +9,50 @@ using Microsoft.VisualStudio.Debugger.Evaluation;
 
 namespace UE4PropVis
 {
+	public class BoolEvaluation
+	{
+		public enum EEvalResult
+		{
+			False,
+			True,
+			Indeterminate,
+		};
+
+		private EEvalResult result_;
+
+		public bool IsValid
+		{
+			get { return result_ != EEvalResult.Indeterminate; }
+		}
+
+		public bool Value
+		{
+			get
+			{
+				if(IsValid)
+				{
+					return result_ == EEvalResult.False ? false : true;
+				}
+				else
+				{
+					throw new Exception();
+				}
+			}
+		}
+
+		public BoolEvaluation(bool val)
+		{
+			result_ = val ? EEvalResult.True : EEvalResult.False;
+		}
+
+		private BoolEvaluation()
+		{
+			result_ = EEvalResult.Indeterminate;
+		}
+
+		public static BoolEvaluation Indeterminate = new BoolEvaluation();
+	};
+
 	public static class Utility
 	{
 		public static string GetExpressionName(DkmVisualizedExpression expression)

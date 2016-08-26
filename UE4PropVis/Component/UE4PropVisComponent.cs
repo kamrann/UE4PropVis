@@ -25,7 +25,7 @@ namespace UE4PropVis
 
     class UE4PropVisComponent : IDkmCustomVisualizer
     {
-        static UE4PropVisComponent()
+		static UE4PropVisComponent()
         {
 			UE4VisualizerRegistrar.Register< UObjectVisualizer.Factory >(Guids.Visualizer.UObject);
 			//UE4VisualizerRegistrar.Register< PropertyListVisualizer.Factory >(Guids.Visualizer.PropertyList);
@@ -83,6 +83,7 @@ namespace UE4PropVis
 				expression.TagValue,
 				expression.VisualizerId
 				);
+			
 
 			var data_item = expression.GetDataItem<ExpressionDataItem>();
 			var visualizer = data_item.Visualizer;
@@ -140,12 +141,18 @@ namespace UE4PropVis
 			Not sure where exactly the problem is, but UObject properties don't expand in VS 2013.
 			When we try, there is an initial call to this method with the property's child expr,
 			so we come here, and do a default eval, which, if the prop is a UObject, will invoke 
-			EvaluateVisualizedExpression above with a new root expr. In 2014, that is followed by
+			EvaluateVisualizedExpression above with a new root expr. In 2015, that is followed by
 			another call to this method for the root expr, which has an attached visualizer and we
 			do the custom expansion. In 2013, it seems the second call into this method does not
 			occur for some reason.
 			*/
 			defaultEvaluationResult = DefaultEE.DefaultEval(expression, false);
-		}
+/*
+	Doing this will crash VS!
+	DkmSuccessEvaluationResult.Create(null, null, "", "", DkmEvaluationResultFlags.None,
+				"", "", "", DkmEvaluationResultCategory.Other, DkmEvaluationResultAccessType.None,
+				DkmEvaluationResultStorageType.None, DkmEvaluationResultTypeModifierFlags.None,
+				null, null, null, null);
+*/		}
 	}
 }

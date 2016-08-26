@@ -69,55 +69,69 @@ namespace UE4PropVis
 		}
 
 		// @TODO: Differentiate between false result and evaluation failure
-		public static bool EvaluateBooleanExpression(string bool_expr_str, DkmVisualizedExpression context_expr)
+		public static BoolEvaluation EvaluateBooleanExpression(string bool_expr_str, DkmVisualizedExpression context_expr)
 		{
 			try
 			{
 				var eval = DefaultEE.DefaultEval(bool_expr_str, context_expr, true);
 				if (eval.TagValue == DkmEvaluationResult.Tag.SuccessResult)
 				{
-					var result = eval as DkmSuccessEvaluationResult;
-					return bool.Parse(result.Value);
+					var eval_result = eval as DkmSuccessEvaluationResult;
+					return new BoolEvaluation(bool.Parse(eval_result.Value));
 				}
 				else
 				{
-					return false;
+					return BoolEvaluation.Indeterminate;
 				}
 			}
-			catch(Exception e)
+			catch(Exception)
 			{
-				return false;
+				return BoolEvaluation.Indeterminate;
 			}
 		}
 
-		// Flags should be in a form that can be inserted into a bit test expression in the 
-		// debuggee context (eg. a raw integer, or a combination of RF_*** flags)
-		public static bool TestUObjectFlags(string uobj_expr_str, string flags, DkmVisualizedExpression context_expr)
+		// Flags should be in a form that can be inserted into a bit test expression in the debuggee context
+		public static BoolEvaluation TestExpressionFlags(string flags_var_expr_str, string flags, DkmVisualizedExpression context_expr)
 		{
-			ExpressionManipulator em = ExpressionManipulator.FromExpression(uobj_expr_str);
-			em = em.PtrCast(Typ.UObjectBase).PtrMember(Memb.ObjFlags);
-			var obj_flags_expr_str = em.Expression;
-
-			// @NOTE: Value string is formatted as 'RF_... | RF_... (<integer value>)'
-			// So for now, rather than extracting what we want, just inject the full expression for
-			// the flags member into the below flag test expression.
-			//string obj_flags_str = ((DkmSuccessEvaluationResult)obj_flags_expr.EvaluationResult).Value;
-
-			// @TODO: Could do the flag test on this side by hard coding in the value of RF_Native, but for now
-			// doing it the more robust way, and evaluating the expression in the context of the debugee.
 			string flag_test_expr_str = String.Format(
 				"({0} & {1}) != 0",
-				obj_flags_expr_str,
+				flags_var_expr_str,
 				flags
 				);
 			return EvaluateBooleanExpression(flag_test_expr_str, context_expr);
 		}
 
-		public static bool IsNativeUClassOrUInterface(string uclass_expr_str, DkmVisualizedExpression context_expr)
+		// Flags should be in a form that can be inserted into a bit test expression in the 
+		// debuggee context (eg. a raw integer, or a combination of RF_*** flags)
+		public static BoolEvaluation TestUObjectFlags(string uobj_expr_str, string flags, DkmVisualizedExpression context_expr)
+		{
+			ExpressionManipulator em = ExpressionManipulator.FromExpression(uobj_expr_str);
+			em = em.PtrCast(Typ.UObjectBase).PtrMember(Memb.ObjFlags);
+			var obj_flags_expr_str = em.Expression;
+
+			// @TODO: Could do the flag test on this side by hard coding in the value of RF_Native, but for now
+			// doing it the more robust way, and evaluating the expression in the context of the debugee.
+			return TestExpressionFlags(obj_flags_expr_str, flags, context_expr);
+		}
+
+		public static BoolEvaluation TestUClassFlags(string uclass_expr_str, string flags, DkmVisualizedExpression context_expr)
+		{
+			ExpressionManipulator em = ExpressionManipulator.FromExpression(uclass_expr_str);
+			em = em.PtrCast(Typ.UClass).PtrMember(Memb.ClassFlags);
+			var class_flags_expr_str = em.Expression;
+
+			// @TODO: Could do the flag test on this side by hard coding in the value of RF_Native, but for now
+			// doing it the more robust way, and evaluating the expression in the context of the debugee.
+			return TestExpressionFlags(class_flags_expr_str, flags, context_expr);
+		}
+
+		public static BoolEvaluation IsNativeUClassOrUInterface(string uclass_expr_str, DkmVisualizedExpression context_expr)
 		{
 			// @TODO: Think we should really check class flags for CLASS_Native, to potentially support interface classes too.
 			// (see comment on flag in UE4 header)
-			return UE4Utility.TestUObjectFlags(uclass_expr_str, ObjFlags.Native, context_expr);
+			//return UE4Utility.TestUObjectFlags(uclass_expr_str, ObjFlags.Native, context_expr);
+
+			return UE4Utility.TestUClassFlags(uclass_expr_str, ClassFlags.Native, context_expr);
 		}
 
 		// Given an expression string resolving to a UClass* (which is assumed to point to a **Blueprint** class), this determines
@@ -128,11 +142,18 @@ namespace UE4PropVis
 			do
 			{
 				var super_em = uclass_em.PtrCast(Typ.UStruct).PtrMember(Memb.SuperStruct).PtrCast(Typ.UClass);
-				if (IsNativeUClassOrUInterface(super_em.Expression, context_expr))
+				var is_native_res = IsNativeUClassOrUInterface(super_em.Expression, context_expr);
+				if (!is_native_res.IsValid)
+				{
+					return null;
+				}
+
+				if(is_native_res.Value)
 				{
 					var name_em = super_em.PtrCast(Typ.UObjectBase).PtrMember(Memb.ObjName);
 					return GetFNameAsString(name_em.Expression, context_expr);
                 }
+
 
 				uclass_em = super_em;
 			}
