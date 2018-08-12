@@ -1,7 +1,7 @@
 # UE4 Property Visualizer
 
 ----------------------------------
-## NOTE: This project has been superseded by a new extension Kantan UE4VS, which incorporates the property visualization along with some other functionality. KUE4VS is not currently on GitHub, but [available for free here](https://kantandev.com/free/kantan-ue4-vs). Note that it is VS 2017 only. ##
+## NOTE: This project has been superseded by a new extension Kantan UE4VS, which incorporates the property visualization along with some other functionality. KUE4VS supports VS 2017 only. [Installer available here](https://kantandev.com/free/kantan-ue4-vs) [Github page](https://github.com/kamrann/KantanUE4VS) ##
 ----------------------------------
 
 UPDATE: Extension updated to reflect recent changes to the names of core UObject member variables. Should work with UE 4.12+.
